@@ -3,86 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Todo</title>
-    <!-- Google Fonts: Inter & Outfit -->
+    <title>AI Todo — Anushka</title>
+    <meta name="description" content="AI-powered personal productivity dashboard with calendar, pomodoro timer, and smart task breakdown.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="app-background">
-        <!-- Decorative glowing orbs -->
         <div class="glow-orb orb-1"></div>
         <div class="glow-orb orb-2"></div>
     </div>
 
-    <main class="app-container">
-        <header class="app-header">
-            <div class="header-top">
-                <div class="user-profile">
-                    <img src="https://api.dicebear.com/7.x/notionists/svg?seed=Anushka" alt="Avatar" class="avatar">
-                    <div class="header-title">
-                        <h1 id="user-greeting">Anushka's Tasks</h1>
-                        <span class="badge">Pro</span>
+    <!-- ===== MAIN SPLIT LAYOUT ===== -->
+    <div class="app-wrapper">
+
+        <!-- ===== LEFT: TODO PANEL ===== -->
+        <div class="todo-panel">
+            <main class="app-container">
+                <header class="app-header">
+                    <div class="header-top">
+                        <div class="user-profile">
+                            <img src="https://api.dicebear.com/7.x/notionists/svg?seed=Anushka" alt="Avatar" class="avatar">
+                            <div class="header-title">
+                                <h1 id="user-greeting">Anushka's Tasks</h1>
+                                <span class="badge">Pro</span>
+                            </div>
+                        </div>
+                        <div class="header-controls">
+                            <div class="pomodoro-widget" title="25 Minute Focus Timer">
+                                <i class="ph ph-timer"></i>
+                                <span id="pomodoro-time">25:00</span>
+                                <button id="btn-pomodoro" class="icon-btn"><i class="ph ph-play"></i></button>
+                            </div>
+                            <button id="btn-settings" class="icon-btn" title="Settings"><i class="ph ph-gear"></i></button>
+                        </div>
                     </div>
+                    <p class="subtitle">What will we accomplish today?</p>
+                    <div class="progress-container">
+                        <div class="progress-info">
+                            <span id="progress-text">0/0 completed</span>
+                            <span id="progress-percentage">0%</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div id="progress-bar-fill" class="progress-bar-fill"></div>
+                        </div>
+                    </div>
+                </header>
+
+                <section class="input-section">
+                    <form id="task-form" class="task-form">
+                        <div class="input-wrapper">
+                            <i class="ph ph-magic-wand input-icon"></i>
+                            <input type="text" id="task-input" placeholder="Ask AI to break down a task, or type one..." autocomplete="off">
+                            <input type="date" id="task-date" class="date-picker" title="Set a deadline">
+                            <button type="button" id="btn-ai" class="btn-secondary" aria-label="AI Breakdown" title="AI Breakdown">
+                                <i class="ph ph-sparkle"></i>
+                            </button>
+                            <button type="submit" class="btn-primary" aria-label="Add Task">
+                                <i class="ph ph-plus"></i>
+                            </button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="filters-section">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="pending">Pending</button>
+                    <button class="filter-btn" data-filter="completed">Completed</button>
+                </section>
+
+                <section class="tasks-section">
+                    <ul id="task-list" class="task-list"></ul>
+                </section>
+            </main>
+        </div>
+
+        <!-- ===== RIGHT: MINI CALENDAR PANEL ===== -->
+        <div class="calendar-panel">
+            <div class="mini-calendar">
+                <div class="mini-cal-header">
+                    <button id="cal-prev" class="icon-btn"><i class="ph ph-caret-left"></i></button>
+                    <span id="cal-month-label" class="cal-month-label"></span>
+                    <button id="cal-next" class="icon-btn"><i class="ph ph-caret-right"></i></button>
                 </div>
-                <div class="header-controls">
-                    <div class="pomodoro-widget" title="25 Minute Focus Timer">
-                        <i class="ph ph-timer"></i>
-                        <span id="pomodoro-time">25:00</span>
-                        <button id="btn-pomodoro" class="icon-btn"><i class="ph ph-play"></i></button>
-                    </div>
-                    <button id="btn-settings" class="icon-btn" title="Settings"><i class="ph ph-gear"></i></button>
+                <div class="mini-cal-weekdays">
+                    <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                </div>
+                <div id="mini-cal-grid" class="mini-cal-grid"></div>
+                <div class="mini-cal-footer">
+                    <p class="cal-hint"><i class="ph ph-cursor-click"></i> Click a date to explore tasks</p>
                 </div>
             </div>
-            <p class="subtitle">What will we accomplish today?</p>
-            
-            <div class="progress-container">
-                <div class="progress-info">
-                    <span id="progress-text">0/0 completed</span>
-                    <span id="progress-percentage">0%</span>
+        </div>
+    </div>
+
+    <!-- ===== FULL-SCREEN CALENDAR VIEW ===== -->
+    <div id="calendar-fullscreen" class="calendar-fullscreen hidden">
+        <div class="cal-fs-header">
+            <button id="btn-cal-back" class="btn-back"><i class="ph ph-arrow-left"></i> Back</button>
+            <div class="cal-fs-nav">
+                <button id="cal-fs-prev" class="icon-btn"><i class="ph ph-caret-left"></i></button>
+                <h2 id="cal-fs-month-label"></h2>
+                <button id="cal-fs-next" class="icon-btn"><i class="ph ph-caret-right"></i></button>
+            </div>
+        </div>
+        <div class="cal-fs-body">
+            <div class="cal-fs-left">
+                <div class="cal-fs-weekdays">
+                    <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
                 </div>
-                <div class="progress-bar-bg">
-                    <div id="progress-bar-fill" class="progress-bar-fill"></div>
+                <div id="cal-fs-grid" class="cal-fs-grid"></div>
+            </div>
+            <div class="cal-fs-right">
+                <div class="cal-day-panel">
+                    <div class="cal-day-panel-header">
+                        <h3 id="cal-day-title">Select a date</h3>
+                    </div>
+                    <div id="cal-day-tasks" class="cal-day-tasks">
+                        <p class="cal-empty-hint">Click a date on the calendar to see tasks.</p>
+                    </div>
                 </div>
             </div>
-        </header>
+        </div>
+    </div>
 
-        <section class="input-section">
-            <form id="task-form" class="task-form">
-                <div class="input-wrapper">
-                    <i class="ph ph-magic-wand input-icon"></i>
-                    <input type="text" id="task-input" placeholder="Ask AI to break down a task, or type one..." autocomplete="off">
-                    <input type="date" id="task-date" class="date-picker" title="Set a deadline">
-                    <button type="button" id="btn-ai" class="btn-secondary" aria-label="AI Breakdown" title="AI Breakdown">
-                        <i class="ph ph-sparkle"></i>
-                    </button>
-                    <button type="submit" class="btn-primary" aria-label="Add Task">
-                        <i class="ph ph-plus"></i>
-                    </button>
-                </div>
-            </form>
-        </section>
-
-        <section class="filters-section">
-            <button class="filter-btn active" data-filter="all">All</button>
-            <button class="filter-btn" data-filter="pending">Pending</button>
-            <button class="filter-btn" data-filter="completed">Completed</button>
-        </section>
-
-        <section class="tasks-section">
-            <ul id="task-list" class="task-list">
-                <!-- Tasks will be injected here via JavaScript -->
-            </ul>
-        </section>
-    </main>
-
-    <!-- Settings Modal -->
+    <!-- ===== SETTINGS MODAL ===== -->
     <div id="settings-modal" class="modal hidden">
-        <div class="modal-content glass-panel">
+        <div class="modal-content">
             <div class="modal-header">
                 <h2>Settings</h2>
                 <button id="btn-close-settings" class="icon-btn"><i class="ph ph-x"></i></button>
@@ -90,7 +140,7 @@
             <div class="modal-body">
                 <label for="api-key-input">Gemini API Key</label>
                 <input type="password" id="api-key-input" placeholder="Enter your Gemini API Key..." autocomplete="off">
-                <p class="help-text">Your key is stored securely in your browser's LocalStorage.</p>
+                <p class="help-text">Your key is stored securely in your browser's LocalStorage and never pushed to GitHub.</p>
                 <button id="btn-save-settings" class="btn-primary full-width">Save Settings</button>
             </div>
         </div>
