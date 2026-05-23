@@ -86,25 +86,89 @@ body {
     gap: 1.5rem;
 }
 
-/* Header */
+/* Header & Profile */
 .app-header {
     margin-bottom: 0.5rem;
 }
 
-.header-title {
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.user-profile {
     display: flex;
     align-items: center;
     gap: 0.75rem;
 }
 
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid var(--glass-border);
+}
+
+.header-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
 .header-title h1 {
     font-family: 'Outfit', sans-serif;
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: 700;
     letter-spacing: -0.02em;
     background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.icon-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem;
+    border-radius: 6px;
+}
+
+.icon-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Pomodoro Widget */
+.pomodoro-widget {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--accent-color);
+}
+.pomodoro-widget.running {
+    color: var(--danger-color);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
 }
 
 .badge {
@@ -196,6 +260,21 @@ body {
 
 #task-input::placeholder {
     color: #6b7280;
+}
+
+.date-picker {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    outline: none;
+    cursor: pointer;
+    margin-right: 0.5rem;
+    font-family: 'Inter', sans-serif;
+}
+.date-picker::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    opacity: 0.5;
+    cursor: pointer;
 }
 
 .btn-secondary {
@@ -396,6 +475,30 @@ body {
     font-size: 0.95rem;
     transition: color 0.3s ease, text-decoration 0.3s ease;
     word-break: break-word;
+    flex: 1;
+    padding: 2px 4px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+}
+
+.task-text:not(:read-only) {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--accent-color);
+    outline: none;
+    color: var(--text-primary);
+}
+
+.task-date-badge {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 6px;
+    border-radius: 8px;
+    white-space: nowrap;
+}
+.task-date-badge.overdue {
+    color: var(--danger-color);
+    background: rgba(239, 68, 68, 0.1);
 }
 
 .task-item.completed .task-text {
@@ -443,6 +546,75 @@ body {
 @keyframes fadeOut {
     from { opacity: 1; transform: scale(1); }
     to { opacity: 0; transform: scale(0.95); }
+}
+
+/* Modal */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.modal.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.modal-content {
+    background: var(--bg-base);
+    padding: 2rem;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 400px;
+    border: 1px solid var(--glass-border);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.modal-body label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.modal-body input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    color: white;
+    padding: 0.75rem;
+    border-radius: 12px;
+    margin-bottom: 0.5rem;
+    outline: none;
+}
+.modal-body input:focus {
+    border-color: var(--accent-color);
+}
+
+.help-text {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+}
+
+.full-width {
+    width: 100%;
+    border-radius: 12px;
 }
 
 /* Responsive */
