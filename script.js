@@ -4,15 +4,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const taskList = document.getElementById('task-list');
     const filterBtns = document.querySelectorAll('.filter-btn');
 
-    let tasks = [];
     let currentFilter = 'all';
 
-    // Dummy initial tasks for visual testing
-    tasks = [
+    // Load tasks from LocalStorage or use dummy data if empty
+    const savedTasks = localStorage.getItem('ai_tasks');
+    let tasks = savedTasks ? JSON.parse(savedTasks) : [
         { id: 1, text: 'Brainstorm Phase 2 AI features', completed: false },
         { id: 2, text: 'Review initial design aesthetics', completed: true },
         { id: 3, text: 'Set up database schema', completed: false }
     ];
+
+    function saveTasks() {
+        localStorage.setItem('ai_tasks', JSON.stringify(tasks));
+    }
 
     function renderTasks() {
         taskList.innerHTML = '';
@@ -70,6 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
             completed: false
         };
         tasks.push(newTask);
+        saveTasks();
         renderTasks();
     }
 
@@ -77,11 +82,13 @@ document.addEventListener('DOMContentLoaded', () => {
         tasks = tasks.map(t => 
             t.id === id ? { ...t, completed: !t.completed } : t
         );
+        saveTasks();
         renderTasks();
     }
 
     function deleteTask(id) {
         tasks = tasks.filter(t => t.id !== id);
+        saveTasks();
         renderTasks();
     }
 
