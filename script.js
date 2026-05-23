@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         filteredTasks.forEach(task => {
             const li = document.createElement('li');
-            li.className = `task-item ${task.completed ? 'completed' : ''}`;
+            li.className = `task-item ${task.completed ? 'completed' : ''} ${task.isSubtask ? 'is-subtask' : ''}`;
             li.dataset.id = task.id;
 
             li.innerHTML = `
@@ -91,6 +91,57 @@ document.addEventListener('DOMContentLoaded', () => {
         saveTasks();
         renderTasks();
     }
+
+    // AI Breakdown Simulation
+    const btnAi = document.getElementById('btn-ai');
+    const inputWrapper = document.querySelector('.input-wrapper');
+
+    btnAi.addEventListener('click', async () => {
+        const text = taskInput.value.trim();
+        if (!text) return;
+
+        // UI Loading State
+        inputWrapper.classList.add('ai-thinking');
+        taskInput.disabled = true;
+        btnAi.disabled = true;
+
+        // Simulate API Delay (2 seconds)
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Create main task
+        const parentId = Date.now();
+        tasks.push({
+            id: parentId,
+            text: text + ' (AI Planned)',
+            completed: false
+        });
+
+        // Create subtasks based on input
+        const subtasks = [
+            `Research best options for: ${text}`,
+            `Draft an initial plan`,
+            `Execute and review`
+        ];
+
+        subtasks.forEach((sub, index) => {
+            tasks.push({
+                id: parentId + index + 1,
+                text: sub,
+                completed: false,
+                isSubtask: true
+            });
+        });
+
+        // Reset UI State
+        saveTasks();
+        renderTasks();
+        
+        taskInput.value = '';
+        taskInput.disabled = false;
+        btnAi.disabled = false;
+        inputWrapper.classList.remove('ai-thinking');
+        taskInput.focus();
+    });
 
     // Form Submit
     taskForm.addEventListener('submit', (e) => {

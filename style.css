@@ -167,6 +167,28 @@ body {
     color: #6b7280;
 }
 
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    color: #a5b4fc;
+    border: 1px solid var(--glass-border);
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-right: 0.25rem;
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    box-shadow: 0 0 10px rgba(165, 180, 252, 0.5);
+}
+
 .btn-primary {
     background: var(--accent-color);
     color: white;
@@ -190,6 +212,28 @@ body {
 
 .btn-primary:active {
     transform: scale(0.95);
+}
+
+/* AI Loading State */
+.ai-thinking {
+    animation: aiPulse 1.5s infinite alternate;
+    pointer-events: none;
+}
+
+.ai-thinking .input-icon {
+    animation: spinSparkle 2s linear infinite;
+    color: #a5b4fc;
+}
+
+@keyframes aiPulse {
+    0% { box-shadow: 0 0 5px var(--accent-glow); border-color: var(--accent-color); }
+    100% { box-shadow: 0 0 20px #a5b4fc; border-color: #a5b4fc; }
+}
+
+@keyframes spinSparkle {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.2); }
+    100% { transform: rotate(360deg) scale(1); }
 }
 
 /* Filters Section */
@@ -266,6 +310,12 @@ body {
     background: rgba(255, 255, 255, 0.06);
     border-color: rgba(255, 255, 255, 0.1);
     transform: translateY(-2px);
+}
+
+.task-item.is-subtask {
+    margin-left: 2rem;
+    border-left: 2px solid var(--accent-color);
+    background: rgba(255, 255, 255, 0.015);
 }
 
 .task-content {
