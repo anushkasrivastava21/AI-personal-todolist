@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Todo</title>
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-background">
+        <!-- Decorative glowing orbs -->
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+    </div>
+
+    <main class="app-container">
+        <header class="app-header">
+            <div class="header-title">
+                <h1>AI Tasks</h1>
+                <span class="badge">Pro</span>
+            </div>
+            <p class="subtitle">What will we accomplish today?</p>
+        </header>
+
+        <section class="input-section">
+            <form id="task-form" class="task-form">
+                <div class="input-wrapper">
+                    <i class="ph ph-magic-wand input-icon"></i>
+                    <input type="text" id="task-input" placeholder="Ask AI to break down a task, or simply type one..." autocomplete="off">
+                    <button type="submit" class="btn-primary" aria-label="Add Task">
+                        <i class="ph ph-plus"></i>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <section class="filters-section">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="pending">Pending</button>
+            <button class="filter-btn" data-filter="completed">Completed</button>
+        </section>
+
+        <section class="tasks-section">
+            <ul id="task-list" class="task-list">
+                <!-- Tasks will be injected here via JavaScript -->
+            </ul>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
