@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const li = document.createElement('li');
             li.className = `task-item ${task.completed ? 'completed' : ''} ${task.isSubtask ? 'is-subtask' : ''}`;
             li.dataset.id = task.id;
+            li.draggable = currentFilter === 'all';
 
             li.innerHTML = `
                 <div class="task-content">
@@ -61,6 +62,13 @@ document.addEventListener('DOMContentLoaded', () => {
             deleteBtn.addEventListener('click', () => {
                 li.style.animation = 'fadeOut 0.3s ease forwards';
                 setTimeout(() => deleteTask(task.id), 300);
+            });
+
+            // Drag and Drop
+            li.addEventListener('dragstart', () => li.classList.add('dragging'));
+            li.addEventListener('dragend', () => {
+                li.classList.remove('dragging');
+                updateTaskOrder();
             });
 
             taskList.appendChild(li);
@@ -162,6 +170,47 @@ document.addEventListener('DOMContentLoaded', () => {
             renderTasks();
         });
     });
+
+    // Drag and Drop Container Logic
+    taskList.addEventListener('dragover', e => {
+        e.preventDefault();
+        if (currentFilter !== 'all') return;
+        
+        const afterElement = getDragAfterElement(taskList, e.clientY);
+        const dragging = document.querySelector('.dragging');
+        if (!dragging) return;
+        
+        if (afterElement == null) {
+            taskList.appendChild(dragging);
+        } else {
+            taskList.insertBefore(dragging, afterElement);
+        }
+    });
+
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.task-item:not(.dragging)')];
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    function updateTaskOrder() {
+        if (currentFilter !== 'all') return;
+        const newOrderIds = [...taskList.querySelectorAll('.task-item')].map(li => Number(li.dataset.id));
+        const reorderedTasks = [];
+        newOrderIds.forEach(id => {
+            const task = tasks.find(t => t.id === id);
+            if (task) reorderedTasks.push(task);
+        });
+        tasks = reorderedTasks;
+        saveTasks();
+    }
 
     // Helper to prevent XSS
     function escapeHTML(str) {
