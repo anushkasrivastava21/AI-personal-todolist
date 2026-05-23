@@ -3,6 +3,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const taskInput = document.getElementById('task-input');
     const taskList = document.getElementById('task-list');
     const filterBtns = document.querySelectorAll('.filter-btn');
+    const progressText = document.getElementById('progress-text');
+    const progressPercentage = document.getElementById('progress-percentage');
+    const progressBarFill = document.getElementById('progress-bar-fill');
 
     let currentFilter = 'all';
 
@@ -16,6 +19,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function saveTasks() {
         localStorage.setItem('ai_tasks', JSON.stringify(tasks));
+    }
+
+    function updateProgress() {
+        if (!progressText || !progressPercentage || !progressBarFill) return;
+        
+        const total = tasks.length;
+        const completed = tasks.filter(t => t.completed).length;
+        const percentage = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+        progressText.textContent = `${completed}/${total} completed`;
+        progressPercentage.textContent = `${percentage}%`;
+        progressBarFill.style.width = `${percentage}%`;
     }
 
     function renderTasks() {
@@ -73,6 +88,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             taskList.appendChild(li);
         });
+
+        updateProgress();
     }
 
     function addTask(text) {
