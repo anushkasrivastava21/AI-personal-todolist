@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Todo — Anushka</title>
-    <meta name="description" content="AI-powered personal productivity dashboard with calendar, pomodoro timer, and smart task breakdown.">
+    <meta name="description" content="AI-powered personal productivity dashboard with calendar, pomodoro timer, habit tracking, and smart task breakdown.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
@@ -15,86 +15,339 @@
     <div class="app-background">
         <div class="glow-orb orb-1"></div>
         <div class="glow-orb orb-2"></div>
+        <div class="glow-orb orb-3"></div>
     </div>
 
-    <!-- ===== MAIN SPLIT LAYOUT ===== -->
-    <div class="app-wrapper">
+    <!-- ===== MAIN APP LAYOUT ===== -->
+    <div class="app-shell">
 
-        <!-- ===== LEFT: TODO PANEL ===== -->
-        <div class="todo-panel">
-            <main class="app-container">
-                <header class="app-header">
-                    <div class="header-top">
-                        <div class="user-profile">
-                            <img src="https://api.dicebear.com/7.x/notionists/svg?seed=Anushka" alt="Avatar" class="avatar">
-                            <div class="header-title">
-                                <h1 id="user-greeting">Anushka's Tasks</h1>
-                                <span class="badge">Pro</span>
+        <!-- ===== SIDEBAR NAVIGATION ===== -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <img src="https://api.dicebear.com/7.x/notionists/svg?seed=Anushka" alt="Avatar" class="sidebar-avatar">
+                <span class="sidebar-name">Anushka</span>
+            </div>
+            <div class="sidebar-nav">
+                <button class="nav-tab active" data-screen="tasks" id="nav-tasks">
+                    <i class="ph ph-check-square"></i>
+                    <span>Tasks</span>
+                </button>
+                <button class="nav-tab" data-screen="pomodoro" id="nav-pomodoro">
+                    <i class="ph ph-timer"></i>
+                    <span>Pomodoro</span>
+                </button>
+                <button class="nav-tab" data-screen="habits" id="nav-habits">
+                    <i class="ph ph-fire"></i>
+                    <span>Habits</span>
+                </button>
+            </div>
+            <div class="sidebar-footer">
+                <button id="btn-settings" class="nav-tab" title="Settings">
+                    <i class="ph ph-gear"></i>
+                    <span>Settings</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- ===== MAIN CONTENT AREA ===== -->
+        <div class="main-content">
+
+            <!-- ==================== TASKS SCREEN ==================== -->
+            <div class="screen active" id="screen-tasks">
+                <div class="screen-scroll">
+                    <div class="screen-inner tasks-layout">
+                        <!-- LEFT: Task Panel -->
+                        <div class="tasks-panel">
+                            <header class="app-header">
+                                <div class="header-top">
+                                    <div class="header-title-area">
+                                        <h1 id="user-greeting">Today's Tasks</h1>
+                                        <span class="badge">Pro</span>
+                                    </div>
+                                </div>
+                                <p class="subtitle" id="tasks-subtitle">What will we accomplish today?</p>
+                                <div class="progress-container">
+                                    <div class="progress-info">
+                                        <span id="progress-text">0/0 workload</span>
+                                        <span id="progress-percentage">0%</span>
+                                    </div>
+                                    <div class="progress-bar-bg">
+                                        <div id="progress-bar-fill" class="progress-bar-fill"></div>
+                                    </div>
+                                </div>
+                            </header>
+
+                            <!-- Enhanced Task Form -->
+                            <section class="input-section">
+                                <form id="task-form" class="task-form">
+                                    <div class="input-wrapper">
+                                        <i class="ph ph-magic-wand input-icon"></i>
+                                        <input type="text" id="task-input" placeholder="Ask AI to break down a task, or type one..." autocomplete="off">
+                                        <button type="button" id="btn-expand-form" class="icon-btn" title="More options">
+                                            <i class="ph ph-sliders-horizontal"></i>
+                                        </button>
+                                        <button type="button" id="btn-ai" class="btn-secondary" aria-label="AI Breakdown" title="AI Breakdown">
+                                            <i class="ph ph-sparkle"></i>
+                                        </button>
+                                        <button type="submit" class="btn-primary" aria-label="Add Task">
+                                            <i class="ph ph-plus"></i>
+                                        </button>
+                                    </div>
+                                    <!-- Expandable Fields -->
+                                    <div class="form-expanded hidden" id="form-expanded">
+                                        <div class="form-row">
+                                            <div class="form-field">
+                                                <label><i class="ph ph-star"></i> Points</label>
+                                                <input type="number" id="task-points" min="1" max="100" value="10" class="field-input small">
+                                            </div>
+                                            <div class="form-field">
+                                                <label><i class="ph ph-barbell"></i> Workload</label>
+                                                <input type="number" id="task-workload" min="1" max="10" value="5" class="field-input small">
+                                            </div>
+                                            <div class="form-field">
+                                                <label><i class="ph ph-calendar"></i> Deadline</label>
+                                                <input type="date" id="task-date" class="field-input">
+                                            </div>
+                                        </div>
+                                        <div class="form-row">
+                                            <div class="form-field flex-1">
+                                                <label><i class="ph ph-tag"></i> Tags</label>
+                                                <input type="text" id="task-tags" placeholder="work, personal..." class="field-input">
+                                            </div>
+                                            <div class="form-field">
+                                                <label><i class="ph ph-clock"></i> Est. Time</label>
+                                                <div class="time-btns">
+                                                    <button type="button" class="time-chip" data-mins="15">15m</button>
+                                                    <button type="button" class="time-chip" data-mins="30">30m</button>
+                                                    <button type="button" class="time-chip" data-mins="60">1h</button>
+                                                    <button type="button" class="time-chip" data-mins="120">2h</button>
+                                                </div>
+                                                <input type="number" id="task-est-time" min="1" placeholder="min" class="field-input small hidden" style="width:60px">
+                                            </div>
+                                        </div>
+                                        <div class="form-row">
+                                            <label class="toggle-label">
+                                                <input type="checkbox" id="task-daily-toggle">
+                                                <span class="toggle-switch"></span>
+                                                <span><i class="ph ph-arrows-clockwise"></i> Make this a Daily Task</span>
+                                            </label>
+                                            <!-- Daily-specific: time of day -->
+                                            <div class="daily-time-options hidden" id="daily-time-options">
+                                                <button type="button" class="tod-chip" data-tod="morning">🌅 Morning</button>
+                                                <button type="button" class="tod-chip" data-tod="afternoon">☀️ Afternoon</button>
+                                                <button type="button" class="tod-chip" data-tod="evening">🌙 Evening</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </section>
+
+                            <!-- Filters -->
+                            <section class="filters-section">
+                                <button class="filter-btn active" data-filter="all">All</button>
+                                <button class="filter-btn" data-filter="pending">Pending</button>
+                                <button class="filter-btn" data-filter="completed">Completed</button>
+                            </section>
+
+                            <!-- Task List -->
+                            <section class="tasks-section">
+                                <ul id="task-list" class="task-list"></ul>
+
+                                <!-- Daily Tasks Bifurcation -->
+                                <div id="daily-tasks-section" class="daily-section hidden">
+                                    <div class="daily-section-header">
+                                        <h3><i class="ph ph-arrows-clockwise"></i> Daily Tasks</h3>
+                                        <button id="btn-add-daily" class="btn-add-daily" title="Add Daily Task">
+                                            <i class="ph ph-plus"></i>
+                                        </button>
+                                    </div>
+                                    <div id="daily-morning" class="daily-group hidden">
+                                        <span class="daily-group-label">🌅 Morning</span>
+                                        <ul class="task-list daily-list" data-tod="morning"></ul>
+                                    </div>
+                                    <div id="daily-afternoon" class="daily-group hidden">
+                                        <span class="daily-group-label">☀️ Afternoon</span>
+                                        <ul class="task-list daily-list" data-tod="afternoon"></ul>
+                                    </div>
+                                    <div id="daily-evening" class="daily-group hidden">
+                                        <span class="daily-group-label">🌙 Evening</span>
+                                        <ul class="task-list daily-list" data-tod="evening"></ul>
+                                    </div>
+                                    <div id="daily-anytime" class="daily-group hidden">
+                                        <span class="daily-group-label">📋 Anytime</span>
+                                        <ul class="task-list daily-list" data-tod="anytime"></ul>
+                                    </div>
+                                </div>
+
+                                <!-- Habits Bifurcation -->
+                                <div id="habits-tasks-section" class="daily-section hidden">
+                                    <div class="daily-section-header">
+                                        <h3><i class="ph ph-fire"></i> Habits</h3>
+                                        <button id="btn-add-habit-inline" class="btn-add-daily" title="Go to Habits">
+                                            <i class="ph ph-arrow-square-out"></i>
+                                        </button>
+                                    </div>
+                                    <ul id="habits-task-list" class="task-list"></ul>
+                                </div>
+                            </section>
+                        </div>
+
+                        <!-- RIGHT: Calendar Panel -->
+                        <div class="calendar-panel">
+                            <div class="mini-calendar">
+                                <div class="mini-cal-header">
+                                    <button id="cal-prev" class="icon-btn"><i class="ph ph-caret-left"></i></button>
+                                    <span id="cal-month-label" class="cal-month-label"></span>
+                                    <button id="cal-next" class="icon-btn"><i class="ph ph-caret-right"></i></button>
+                                </div>
+                                <div class="mini-cal-weekdays">
+                                    <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                                </div>
+                                <div id="mini-cal-grid" class="mini-cal-grid"></div>
+                                <div class="mini-cal-footer">
+                                    <p class="cal-hint"><i class="ph ph-cursor-click"></i> Click a date to explore tasks</p>
+                                </div>
                             </div>
                         </div>
-                        <div class="header-controls">
-                            <div class="pomodoro-widget" title="25 Minute Focus Timer">
-                                <i class="ph ph-timer"></i>
-                                <span id="pomodoro-time">25:00</span>
-                                <button id="btn-pomodoro" class="icon-btn"><i class="ph ph-play"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== POMODORO SCREEN ==================== -->
+            <div class="screen" id="screen-pomodoro">
+                <div class="screen-scroll">
+                    <div class="screen-inner pomo-layout">
+                        <div class="pomo-main">
+                            <!-- Mode Label -->
+                            <div class="pomo-mode-label" id="pomo-mode-label">Focus Time</div>
+
+                            <!-- Circular Timer -->
+                            <div class="pomo-timer-wrap">
+                                <svg class="pomo-ring" viewBox="0 0 240 240">
+                                    <circle class="pomo-ring-bg" cx="120" cy="120" r="108" />
+                                    <circle class="pomo-ring-fill" id="pomo-ring-fill" cx="120" cy="120" r="108" />
+                                </svg>
+                                <div class="pomo-time-display">
+                                    <span id="pomo-time" class="pomo-time">25:00</span>
+                                    <span id="pomo-session-label" class="pomo-session-label">Session 1 of 4</span>
+                                </div>
                             </div>
-                            <button id="btn-settings" class="icon-btn" title="Settings"><i class="ph ph-gear"></i></button>
+
+                            <!-- Session Dots -->
+                            <div class="pomo-dots" id="pomo-dots">
+                                <div class="pomo-dot active"></div>
+                                <div class="pomo-dot"></div>
+                                <div class="pomo-dot"></div>
+                                <div class="pomo-dot"></div>
+                            </div>
+
+                            <!-- Controls -->
+                            <div class="pomo-controls">
+                                <button id="pomo-reset" class="pomo-btn secondary" title="Reset">
+                                    <i class="ph ph-arrow-counter-clockwise"></i>
+                                </button>
+                                <button id="pomo-play" class="pomo-btn primary" title="Start">
+                                    <i class="ph ph-play"></i>
+                                </button>
+                                <button id="pomo-skip" class="pomo-btn secondary" title="Skip">
+                                    <i class="ph ph-skip-forward"></i>
+                                </button>
+                            </div>
+
+                            <!-- Manual Break Trigger -->
+                            <div class="pomo-break-trigger" id="pomo-break-trigger">
+                                <button id="pomo-take-break" class="pomo-break-btn">
+                                    <i class="ph ph-coffee"></i> Take a Break
+                                </button>
+                                <div class="break-dropdown hidden" id="break-dropdown">
+                                    <button class="break-option" data-break="short">Short Break</button>
+                                    <button class="break-option" data-break="long">Long Break</button>
+                                </div>
+                            </div>
+
+                            <!-- Task Link -->
+                            <div class="pomo-task-link">
+                                <label>Working on:</label>
+                                <select id="pomo-task-select">
+                                    <option value="">— No task linked —</option>
+                                </select>
+                            </div>
+
+                            <!-- Editable Settings -->
+                            <div class="pomo-settings-panel">
+                                <button id="pomo-toggle-settings" class="pomo-settings-toggle">
+                                    <i class="ph ph-gear"></i> Timer Settings
+                                </button>
+                                <div class="pomo-settings-body hidden" id="pomo-settings-body">
+                                    <div class="pomo-setting">
+                                        <label>Focus</label>
+                                        <input type="number" id="pomo-set-focus" min="1" max="120" value="25" class="pomo-set-input"> min
+                                    </div>
+                                    <div class="pomo-setting">
+                                        <label>Short Break</label>
+                                        <input type="number" id="pomo-set-short" min="1" max="30" value="5" class="pomo-set-input"> min
+                                    </div>
+                                    <div class="pomo-setting">
+                                        <label>Long Break</label>
+                                        <input type="number" id="pomo-set-long" min="1" max="60" value="15" class="pomo-set-input"> min
+                                    </div>
+                                    <div class="pomo-setting">
+                                        <label>Sessions</label>
+                                        <input type="number" id="pomo-set-sessions" min="1" max="10" value="4" class="pomo-set-input">
+                                    </div>
+                                    <button id="pomo-save-settings" class="btn-primary full-width" style="border-radius:10px;padding:0.5rem;font-size:0.85rem;height:auto;width:auto;">Save</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stats Sidebar -->
+                        <div class="pomo-stats-panel">
+                            <h3>Today's Focus</h3>
+                            <div class="pomo-stat-cards">
+                                <div class="pomo-stat-card">
+                                    <i class="ph ph-clock"></i>
+                                    <span class="stat-value" id="pomo-stat-time">0 min</span>
+                                    <span class="stat-label">Focus Time</span>
+                                </div>
+                                <div class="pomo-stat-card">
+                                    <i class="ph ph-check-circle"></i>
+                                    <span class="stat-value" id="pomo-stat-sessions">0</span>
+                                    <span class="stat-label">Sessions</span>
+                                </div>
+                                <div class="pomo-stat-card">
+                                    <i class="ph ph-fire"></i>
+                                    <span class="stat-value" id="pomo-stat-streak">0 days</span>
+                                    <span class="stat-label">Streak</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <p class="subtitle">What will we accomplish today?</p>
-                    <div class="progress-container">
-                        <div class="progress-info">
-                            <span id="progress-text">0/0 completed</span>
-                            <span id="progress-percentage">0%</span>
+                </div>
+            </div>
+
+            <!-- ==================== HABITS SCREEN ==================== -->
+            <div class="screen" id="screen-habits">
+                <div class="screen-scroll">
+                    <div class="screen-inner habits-layout">
+                        <div class="habits-header">
+                            <div>
+                                <h1>Habit Builder</h1>
+                                <p class="subtitle">Build consistency, track progress, grow.</p>
+                            </div>
+                            <button id="btn-add-habit" class="btn-primary" style="width:auto;padding:0.5rem 1.2rem;border-radius:12px;gap:0.4rem;font-size:0.9rem;">
+                                <i class="ph ph-plus"></i> New Habit
+                            </button>
                         </div>
-                        <div class="progress-bar-bg">
-                            <div id="progress-bar-fill" class="progress-bar-fill"></div>
+
+                        <!-- Habit Cards Grid -->
+                        <div class="habits-grid" id="habits-grid">
+                            <!-- Rendered by JS -->
+                            <div class="habits-empty" id="habits-empty">
+                                <i class="ph ph-plant" style="font-size:3rem;color:var(--accent-color);"></i>
+                                <p>No habits yet. Start building one!</p>
+                            </div>
                         </div>
                     </div>
-                </header>
-
-                <section class="input-section">
-                    <form id="task-form" class="task-form">
-                        <div class="input-wrapper">
-                            <i class="ph ph-magic-wand input-icon"></i>
-                            <input type="text" id="task-input" placeholder="Ask AI to break down a task, or type one..." autocomplete="off">
-                            <input type="date" id="task-date" class="date-picker" title="Set a deadline">
-                            <button type="button" id="btn-ai" class="btn-secondary" aria-label="AI Breakdown" title="AI Breakdown">
-                                <i class="ph ph-sparkle"></i>
-                            </button>
-                            <button type="submit" class="btn-primary" aria-label="Add Task">
-                                <i class="ph ph-plus"></i>
-                            </button>
-                        </div>
-                    </form>
-                </section>
-
-                <section class="filters-section">
-                    <button class="filter-btn active" data-filter="all">All</button>
-                    <button class="filter-btn" data-filter="pending">Pending</button>
-                    <button class="filter-btn" data-filter="completed">Completed</button>
-                </section>
-
-                <section class="tasks-section">
-                    <ul id="task-list" class="task-list"></ul>
-                </section>
-            </main>
-        </div>
-
-        <!-- ===== RIGHT: MINI CALENDAR PANEL ===== -->
-        <div class="calendar-panel">
-            <div class="mini-calendar">
-                <div class="mini-cal-header">
-                    <button id="cal-prev" class="icon-btn"><i class="ph ph-caret-left"></i></button>
-                    <span id="cal-month-label" class="cal-month-label"></span>
-                    <button id="cal-next" class="icon-btn"><i class="ph ph-caret-right"></i></button>
-                </div>
-                <div class="mini-cal-weekdays">
-                    <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
-                </div>
-                <div id="mini-cal-grid" class="mini-cal-grid"></div>
-                <div class="mini-cal-footer">
-                    <p class="cal-hint"><i class="ph ph-cursor-click"></i> Click a date to explore tasks</p>
                 </div>
             </div>
         </div>
@@ -142,6 +395,183 @@
                 <input type="password" id="api-key-input" placeholder="Enter your Gemini API Key..." autocomplete="off">
                 <p class="help-text">Your key is stored securely in your browser's LocalStorage and never pushed to GitHub.</p>
                 <button id="btn-save-settings" class="btn-primary full-width">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TASK EDIT MODAL ===== -->
+    <div id="task-edit-modal" class="modal hidden">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2 id="task-edit-modal-title">Edit Task</h2>
+                <button id="btn-close-task-edit" class="icon-btn"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-field">
+                    <label>Task Description</label>
+                    <input type="text" id="edit-task-text" class="field-input">
+                </div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>Points</label>
+                        <input type="number" id="edit-task-points" min="1" max="100" class="field-input small">
+                    </div>
+                    <div class="form-field">
+                        <label>Workload (1-10)</label>
+                        <input type="number" id="edit-task-workload" min="1" max="10" class="field-input small">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>Tags (comma separated)</label>
+                        <input type="text" id="edit-task-tags" class="field-input">
+                    </div>
+                    <div class="form-field">
+                        <label>Estimated Time (minutes)</label>
+                        <input type="number" id="edit-task-est-time" class="field-input small" min="1">
+                    </div>
+                </div>
+                <div class="form-field">
+                    <label>Deadline</label>
+                    <input type="date" id="edit-task-date" class="field-input">
+                </div>
+                <button id="btn-save-task-edit" class="btn-primary full-width" style="margin-top:1rem;">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== HABIT CREATE/EDIT MODAL ===== -->
+    <div id="habit-modal" class="modal hidden">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2 id="habit-modal-title">New Habit</h2>
+                <button id="btn-close-habit-modal" class="icon-btn"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="modal-body habit-form-body">
+                <div class="form-field">
+                    <label>Habit Name</label>
+                    <input type="text" id="habit-name" placeholder="e.g. Read, Exercise, Meditate..." class="field-input">
+                </div>
+                <div class="form-field">
+                    <label>Description <span class="optional">(optional)</span></label>
+                    <textarea id="habit-desc" placeholder="What's the goal of this habit?" class="field-textarea" rows="2"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>Target Type</label>
+                        <select id="habit-target-type" class="field-input">
+                            <option value="checkin">Daily Check-in</option>
+                            <option value="measurable">Measurable</option>
+                        </select>
+                    </div>
+                    <div class="form-field hidden" id="habit-measurable-fields">
+                        <label>Target Value</label>
+                        <div style="display:flex;gap:0.4rem;">
+                            <input type="number" id="habit-target-value" min="1" value="30" class="field-input small">
+                            <input type="text" id="habit-unit" placeholder="unit (min, pages...)" class="field-input" style="max-width:120px;">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>Frequency</label>
+                        <select id="habit-frequency" class="field-input">
+                            <option value="daily">Daily</option>
+                            <option value="weekly:3">3× per week</option>
+                            <option value="weekly:5">5× per week</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label class="toggle-label" style="margin-top:1.2rem;">
+                            <input type="checkbox" id="habit-streak-toggle" checked>
+                            <span class="toggle-switch"></span>
+                            <span>🔥 Track Streak</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- AI Habit Scaling Section -->
+                <div class="ai-plan-section">
+                    <div class="ai-plan-header">
+                        <h4><i class="ph ph-sparkle"></i> AI Habit Coach</h4>
+                        <span class="optional">Describe your goal and get a progressive plan</span>
+                    </div>
+                    <textarea id="habit-plan-desc" placeholder="e.g. I want to build a reading habit. I currently read 0 pages per day. I want to eventually read 50 pages daily." class="field-textarea" rows="3"></textarea>
+                    <button type="button" id="btn-generate-plan" class="btn-ai-plan">
+                        <i class="ph ph-sparkle"></i> Generate Plan
+                    </button>
+                    <div id="ai-plan-result" class="ai-plan-result hidden">
+                        <table class="plan-table" id="plan-table">
+                            <thead><tr><th>Weeks</th><th>Target</th><th></th></tr></thead>
+                            <tbody id="plan-table-body"></tbody>
+                        </table>
+                        <button type="button" id="btn-add-plan-row" class="btn-add-plan-row">+ Add Week</button>
+                    </div>
+                </div>
+
+                <button id="btn-save-habit" class="btn-primary full-width" style="margin-top:1rem;">Save Habit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== HABIT DETAIL MODAL ===== -->
+    <div id="habit-detail-modal" class="modal hidden">
+        <div class="modal-content modal-xl">
+            <div class="modal-header">
+                <h2 id="habit-detail-title">Habit Details</h2>
+                <div style="display:flex;gap:0.5rem;">
+                    <button id="btn-edit-habit" class="icon-btn" title="Edit"><i class="ph ph-pencil"></i></button>
+                    <button id="btn-delete-habit" class="icon-btn" title="Delete" style="color:var(--danger-color);"><i class="ph ph-trash"></i></button>
+                    <button id="btn-close-habit-detail" class="icon-btn"><i class="ph ph-x"></i></button>
+                </div>
+            </div>
+            <div class="modal-body habit-detail-body">
+                <!-- Streak + Quick Log -->
+                <div class="habit-detail-top">
+                    <div class="habit-streak-display">
+                        <span class="streak-fire">🔥</span>
+                        <span class="streak-number" id="hd-streak">0</span>
+                        <span class="streak-label">day streak</span>
+                    </div>
+                    <div class="habit-best-streak">
+                        Best: <span id="hd-best-streak">0</span> days
+                    </div>
+                    <div class="habit-quick-log">
+                        <span>Today:</span>
+                        <button id="hd-log-btn" class="habit-log-btn">
+                            <i class="ph ph-check"></i> Mark Done
+                        </button>
+                        <input type="number" id="hd-log-value" class="field-input small hidden" placeholder="0">
+                        <span id="hd-log-unit" class="hidden"></span>
+                    </div>
+                </div>
+
+                <!-- Plan Progress (if exists) -->
+                <div id="hd-plan-section" class="hd-plan-section hidden">
+                    <h4>📈 Current Plan Target</h4>
+                    <div class="hd-plan-current" id="hd-plan-current"></div>
+                </div>
+
+                <!-- Heatmap -->
+                <div class="habit-graph-section">
+                    <h4>Contribution Heatmap</h4>
+                    <div class="heatmap-wrap" id="hd-heatmap"></div>
+                </div>
+
+                <!-- Chart -->
+                <div class="habit-graph-section">
+                    <h4>Weekly Progress</h4>
+                    <canvas id="hd-chart" width="600" height="200"></canvas>
+                </div>
+
+                <!-- Streak Timeline -->
+                <div class="habit-graph-section">
+                    <h4>Streak Timeline</h4>
+                    <div class="streak-timeline" id="hd-streak-timeline"></div>
+                </div>
+
+                <!-- Milestones -->
+                <div class="habit-milestones" id="hd-milestones"></div>
             </div>
         </div>
     </div>
