@@ -1191,6 +1191,38 @@ canvas { width: 100%; border-radius: 8px; }
 .milestone-badge.earned { background: rgba(245,158,11,0.2); box-shadow: 0 0 10px rgba(245,158,11,0.2); }
 .milestone-badge.locked { opacity: 0.4; }
 
+/* ========== RECURRING/SCHEDULED TASKS ========== */
+.recurring-schedule-badge {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    background: rgba(99,102,241,0.12);
+    color: var(--accent-light);
+    padding: 0.15rem 0.55rem; border-radius: 8px;
+    font-size: 0.72rem; font-weight: 600;
+    letter-spacing: 0.02em;
+}
+.recurring-schedule-badge i { font-size: 0.8rem; }
+
+.recurring-day-tags {
+    display: flex; gap: 0.25rem; flex-wrap: wrap;
+}
+.recurring-day-tag {
+    display: inline-block;
+    background: rgba(99,102,241,0.1);
+    color: var(--accent-light);
+    padding: 0.1rem 0.4rem; border-radius: 5px;
+    font-size: 0.68rem; font-weight: 600;
+}
+.recurring-day-tag.today {
+    background: rgba(16,185,129,0.2);
+    color: var(--success-color);
+    box-shadow: 0 0 6px rgba(16,185,129,0.15);
+}
+.recurring-time-badge {
+    display: inline-flex; align-items: center; gap: 0.2rem;
+    font-size: 0.72rem; color: var(--text-secondary);
+}
+.recurring-time-badge i { font-size: 0.75rem; }
+
 /* ========== AI ASSISTANT SCREEN ========== */
 .assistant-screen {
     display: flex; flex-direction: column;

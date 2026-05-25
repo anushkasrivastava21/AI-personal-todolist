@@ -98,10 +98,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!progressText) return;
         const allTasks = [...tasks];
         const dailyForToday = getDailyTasksForToday();
+        const recurringForToday = typeof getRecurringTasksForToday === 'function' ? getRecurringTasksForToday() : [];
         const totalWorkload = allTasks.reduce((s, t) => s + (t.workload || 5), 0)
-            + dailyForToday.reduce((s, dt) => s + (dt.workload || 3), 0);
+            + dailyForToday.reduce((s, dt) => s + (dt.workload || 3), 0)
+            + recurringForToday.reduce((s, rt) => s + (rt.workload || 3), 0);
         const completedWorkload = allTasks.filter(t => t.completed).reduce((s, t) => s + (t.workload || 5), 0)
-            + dailyForToday.filter(dt => isDailyDoneToday(dt)).reduce((s, dt) => s + (dt.workload || 3), 0);
+            + dailyForToday.filter(dt => isDailyDoneToday(dt)).reduce((s, dt) => s + (dt.workload || 3), 0)
+            + recurringForToday.filter(rt => typeof isRecurringDoneToday === 'function' && isRecurringDoneToday(rt)).reduce((s, rt) => s + (rt.workload || 3), 0);
         const pct = totalWorkload === 0 ? 0 : Math.round((completedWorkload / totalWorkload) * 100);
         progressText.textContent = `${completedWorkload}/${totalWorkload} workload`;
         progressPercentage.textContent = `${pct}%`;
@@ -214,6 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateProgress();
         renderMiniCalendar();
         renderDailyTasks();
+        if (typeof renderRecurringTasks === 'function') renderRecurringTasks();
         renderHabitsInTaskList();
     }
 
@@ -531,6 +535,158 @@ document.addEventListener('DOMContentLoaded', () => {
                 listEl.appendChild(li);
             });
         }
+        updateProgress();
+    }
+
+    // ===================================================================
+    //  SECTION 5B: RECURRING/SCHEDULED TASKS
+    // ===================================================================
+    let recurringTasks = JSON.parse(localStorage.getItem('recurring_tasks') || '[]');
+    function saveRecurringTasks() { localStorage.setItem('recurring_tasks', JSON.stringify(recurringTasks)); }
+
+    const DAYS_MAP = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    function addRecurringTask(name, opts = {}) {
+        recurringTasks.push({
+            id: Date.now() + Math.random(),
+            name,
+            recurrenceDays: opts.recurrenceDays || [],   // [0..6]
+            timeOfDay: opts.timeOfDay || 'anytime',
+            completions: {},   // keyed by date string
+            createdAt: todayStr(),
+        });
+        saveRecurringTasks();
+        renderRecurringTasks();
+    }
+
+    function getRecurringTasksForToday() {
+        const dayNum = new Date().getDay(); // 0=Sun
+        return recurringTasks.filter(rt => {
+            if (!rt.recurrenceDays || rt.recurrenceDays.length === 0) return true; // no day filter = every day
+            return rt.recurrenceDays.includes(dayNum);
+        });
+    }
+
+    function isRecurringDoneToday(rt) {
+        return rt.completions && rt.completions[todayStr()] === true;
+    }
+
+    function toggleRecurringTask(id) {
+        const rt = recurringTasks.find(r => r.id === id);
+        if (!rt) return;
+        if (!rt.completions) rt.completions = {};
+        const today = todayStr();
+        rt.completions[today] = !rt.completions[today];
+        saveRecurringTasks();
+    }
+
+    function deleteRecurringTask(id) {
+        recurringTasks = recurringTasks.filter(r => r.id !== id);
+        saveRecurringTasks();
+    }
+
+    function renderRecurringTasks() {
+        const section = document.getElementById('recurring-tasks-section');
+        const listEl = document.getElementById('recurring-task-list');
+        if (!section || !listEl) return;
+
+        const todaysTasks = getRecurringTasksForToday();
+        // Also show tasks not scheduled today but exist, in a muted style
+        const otherTasks = recurringTasks.filter(rt => !todaysTasks.includes(rt));
+
+        if (recurringTasks.length === 0) {
+            section.classList.add('hidden');
+            return;
+        }
+        section.classList.remove('hidden');
+        listEl.innerHTML = '';
+
+        const todayDayNum = new Date().getDay();
+
+        // Render today's recurring tasks first
+        todaysTasks.forEach(rt => {
+            const done = isRecurringDoneToday(rt);
+            const li = document.createElement('li');
+            li.className = `task-item ${done ? 'completed' : ''}`;
+            li.dataset.id = rt.id;
+
+            const dayTags = (rt.recurrenceDays || []).map(d =>
+                `<span class="recurring-day-tag ${d === todayDayNum ? 'today' : ''}">${DAYS_MAP[d]}</span>`
+            ).join('');
+
+            const timeIcon = rt.timeOfDay === 'morning' ? '🌅' : rt.timeOfDay === 'afternoon' ? '☀️' : rt.timeOfDay === 'evening' ? '🌙' : '📋';
+
+            li.innerHTML = `
+                <div class="task-main-row">
+                    <input type="checkbox" class="task-checkbox" ${done ? 'checked' : ''}>
+                    <input type="text" class="task-text" value="${escapeHTML(rt.name)}" readonly>
+                    <div class="task-actions">
+                        <button class="action-btn btn-delete" title="Delete"><i class="ph ph-trash"></i></button>
+                    </div>
+                </div>
+                <div class="task-meta-row">
+                    <span class="recurring-schedule-badge"><i class="ph ph-arrows-clockwise"></i> Recurring</span>
+                    <div class="recurring-day-tags">${dayTags}</div>
+                    <span class="recurring-time-badge"><i class="ph ph-clock"></i> ${rt.timeOfDay || 'anytime'}</span>
+                </div>
+            `;
+
+            li.querySelector('.task-checkbox').addEventListener('change', () => {
+                toggleRecurringTask(rt.id);
+                renderTasks();
+            });
+
+            const textEl = li.querySelector('.task-text');
+            textEl.addEventListener('focus', () => textEl.removeAttribute('readonly'));
+            textEl.addEventListener('blur', () => {
+                textEl.setAttribute('readonly', true);
+                rt.name = textEl.value;
+                saveRecurringTasks();
+            });
+            textEl.addEventListener('keydown', e => { if (e.key === 'Enter') textEl.blur(); });
+
+            li.querySelector('.btn-delete')?.addEventListener('click', () => {
+                li.style.animation = 'fadeOut 0.3s ease forwards';
+                setTimeout(() => { deleteRecurringTask(rt.id); renderTasks(); }, 280);
+            });
+
+            listEl.appendChild(li);
+        });
+
+        // Show non-today tasks in muted style
+        otherTasks.forEach(rt => {
+            const li = document.createElement('li');
+            li.className = 'task-item';
+            li.style.opacity = '0.45';
+            li.dataset.id = rt.id;
+
+            const dayTags = (rt.recurrenceDays || []).map(d =>
+                `<span class="recurring-day-tag">${DAYS_MAP[d]}</span>`
+            ).join('');
+
+            li.innerHTML = `
+                <div class="task-main-row">
+                    <input type="checkbox" class="task-checkbox" disabled>
+                    <input type="text" class="task-text" value="${escapeHTML(rt.name)}" readonly>
+                    <div class="task-actions">
+                        <button class="action-btn btn-delete" title="Delete"><i class="ph ph-trash"></i></button>
+                    </div>
+                </div>
+                <div class="task-meta-row">
+                    <span class="recurring-schedule-badge"><i class="ph ph-arrows-clockwise"></i> Recurring</span>
+                    <div class="recurring-day-tags">${dayTags}</div>
+                    <span class="recurring-time-badge"><i class="ph ph-clock"></i> ${rt.timeOfDay || 'anytime'}</span>
+                </div>
+            `;
+
+            li.querySelector('.btn-delete')?.addEventListener('click', () => {
+                li.style.animation = 'fadeOut 0.3s ease forwards';
+                setTimeout(() => { deleteRecurringTask(rt.id); renderTasks(); }, 280);
+            });
+
+            listEl.appendChild(li);
+        });
+
         updateProgress();
     }
 
@@ -2052,14 +2208,18 @@ Example output for "remind me to go to the gym every monday and wednesday mornin
         else if (parsed.action === 'list_tasks') {
             const pendingTasks = tasks.filter(t => !t.completed && !t.parentId);
             const daily = getDailyTasksForToday().filter(t => !isDailyDoneToday(t));
+            const recurring = typeof getRecurringTasksForToday === 'function' ? getRecurringTasksForToday().filter(t => !isRecurringDoneToday(t)) : [];
             
-            if (pendingTasks.length === 0 && daily.length === 0) {
+            if (pendingTasks.length === 0 && daily.length === 0 && recurring.length === 0) {
                 aiResponseText = "You're all caught up! No tasks left for today.";
             } else {
                 aiResponseText = "Here is what's on your plate today:";
                 actionCardHtml = `<div class="msg-action-card"><div class="action-card-body">`;
                 if (daily.length > 0) {
                     actionCardHtml += `<div class="action-card-row"><span class="label">Daily</span><span class="value">${daily.length} left</span></div>`;
+                }
+                if (recurring.length > 0) {
+                    actionCardHtml += `<div class="action-card-row"><span class="label">Recurring</span><span class="value">${recurring.length} left</span></div>`;
                 }
                 if (pendingTasks.length > 0) {
                     actionCardHtml += `<div class="action-card-row"><span class="label">To-do</span><span class="value">${pendingTasks.length} pending</span></div>`;
@@ -2082,4 +2242,5 @@ Example output for "remind me to go to the gym every monday and wednesday mornin
     renderTasks();
     initMiniCal();
     renderHabits();
+    if (typeof renderRecurringTasks === 'function') renderRecurringTasks();
 });
