@@ -1904,12 +1904,178 @@ document.addEventListener('DOMContentLoaded', () => {
         chatStatusEl.textContent = 'Online — ready to help';
     }
 
-    // ===== Placeholder processAssistantMessage (Part 2 will replace this) =====
+    // ===== Real Gemini API Integration =====
     async function processAssistantMessage(userText) {
-        // Simulate delay for now
-        await new Promise(r => setTimeout(r, 1200));
+        if (!geminiApiKey) {
+            throw new Error('No API key');
+        }
+
+        const systemPrompt = `You are an AI personal task assistant for a productivity app.
+The user will tell you what they want to do. Your job is to extract the intent and return a raw JSON object.
+No markdown, no backticks, no conversational text. JUST valid JSON.
+
+Actions you can take:
+1. "add_task" - A one-time task. Fields: action, name, deadline (YYYY-MM-DD if applicable).
+2. "add_daily" - A daily recurring task. Fields: action, name, timeOfDay (morning, afternoon, evening, anytime).
+3. "add_recurring" - A custom recurring task. Fields: action, name, recurrenceType (weekly, custom), recurrenceDays (array of numbers 0-6 where 0=Sun, 6=Sat), timeOfDay (morning, afternoon, evening, anytime).
+4. "list_tasks" - When the user asks what tasks they have today. Fields: action.
+5. "general_chat" - For friendly greetings or unrecognized commands. Fields: action, message (a short friendly reply).
+
+Use the current date: ${new Date().toISOString().split('T')[0]} as context for words like "tomorrow".
+Example output for "remind me to go to the gym every monday and wednesday morning":
+{"action": "add_recurring", "name": "Go to the gym", "recurrenceDays": [1, 3], "timeOfDay": "morning"}`;
+
+        const requestBody = {
+            system_instruction: { parts: [{ text: systemPrompt }] },
+            contents: [
+                ...chatHistory.slice(0, -1).map(msg => ({
+                    role: msg.role === 'ai' ? 'model' : 'user',
+                    parts: [{ text: msg.text }]
+                })),
+                {
+                    role: "user",
+                    parts: [{ text: userText }]
+                }
+            ],
+            generationConfig: {
+                temperature: 0.1,
+                responseMimeType: "application/json"
+            }
+        };
+
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!res.ok) throw new Error('API Error: ' + res.status);
+        const data = await res.json();
+        const raw = data.candidates[0].content.parts[0].text;
+        const parsed = JSON.parse(raw.trim());
+        
+        chatHistory.push({ role: 'ai', text: raw });
+
+        await executeAssistantAction(parsed);
+    }
+
+    async function executeAssistantAction(parsed) {
+        let aiResponseText = "";
+        let actionCardHtml = "";
+
+        if (parsed.action === 'add_task') {
+            const task = addTask(parsed.name, parsed.deadline || null);
+            aiResponseText = "I've added that task for you.";
+            actionCardHtml = `
+                <div class="msg-action-card">
+                    <div class="action-card-header">
+                        <i class="ph ph-check-circle"></i> Task Created
+                    </div>
+                    <div class="action-card-body">
+                        <div class="action-card-row">
+                            <span class="label">Task</span>
+                            <span class="value">${escapeHTML(parsed.name)}</span>
+                        </div>
+                        ${parsed.deadline ? `<div class="action-card-row"><span class="label">Due</span><span class="value">${parsed.deadline}</span></div>` : ''}
+                    </div>
+                </div>
+            `;
+            renderTasks();
+            if (typeof renderMiniCalendar === 'function') renderMiniCalendar();
+        } 
+        else if (parsed.action === 'add_daily') {
+            addDailyTask(parsed.name, { timeOfDay: parsed.timeOfDay });
+            aiResponseText = "Got it! I've set up a daily task.";
+            actionCardHtml = `
+                <div class="msg-action-card">
+                    <div class="action-card-header">
+                        <i class="ph ph-arrows-clockwise"></i> Daily Task Added
+                    </div>
+                    <div class="action-card-body">
+                        <div class="action-card-row">
+                            <span class="label">Routine</span>
+                            <span class="value">${escapeHTML(parsed.name)}</span>
+                        </div>
+                        <div class="action-card-row">
+                            <span class="label">Time</span>
+                            <span class="value action-card-tag">${parsed.timeOfDay || 'anytime'}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            renderDailyTasks();
+            updateProgress();
+        }
+        else if (parsed.action === 'add_recurring') {
+            // Stub for addRecurringTask which we will fully implement in Part 3
+            if (typeof addRecurringTask === 'function') {
+                addRecurringTask(parsed.name, {
+                    recurrenceDays: parsed.recurrenceDays || [],
+                    timeOfDay: parsed.timeOfDay || 'anytime'
+                });
+            } else {
+                console.warn("addRecurringTask will be implemented in Part 3. Adding to localStorage directly as a stub.");
+                let rTasks = JSON.parse(localStorage.getItem('recurring_tasks') || '[]');
+                rTasks.push({
+                    id: Date.now() + Math.random(),
+                    name: parsed.name,
+                    recurrenceDays: parsed.recurrenceDays || [],
+                    timeOfDay: parsed.timeOfDay || 'anytime',
+                    createdAt: todayStr()
+                });
+                localStorage.setItem('recurring_tasks', JSON.stringify(rTasks));
+                if (typeof renderRecurringTasks === 'function') renderRecurringTasks();
+            }
+
+            aiResponseText = "Scheduled! I've added a custom recurring task.";
+            const daysMap = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const daysStr = (parsed.recurrenceDays || []).map(d => daysMap[d]).join(', ');
+            
+            actionCardHtml = `
+                <div class="msg-action-card">
+                    <div class="action-card-header">
+                        <i class="ph ph-calendar"></i> Recurring Task
+                    </div>
+                    <div class="action-card-body">
+                        <div class="action-card-row">
+                            <span class="label">Task</span>
+                            <span class="value">${escapeHTML(parsed.name)}</span>
+                        </div>
+                        <div class="action-card-row">
+                            <span class="label">Days</span>
+                            <span class="value action-card-tag">${daysStr || 'Any'}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        else if (parsed.action === 'list_tasks') {
+            const pendingTasks = tasks.filter(t => !t.completed && !t.parentId);
+            const daily = getDailyTasksForToday().filter(t => !isDailyDoneToday(t));
+            
+            if (pendingTasks.length === 0 && daily.length === 0) {
+                aiResponseText = "You're all caught up! No tasks left for today.";
+            } else {
+                aiResponseText = "Here is what's on your plate today:";
+                actionCardHtml = `<div class="msg-action-card"><div class="action-card-body">`;
+                if (daily.length > 0) {
+                    actionCardHtml += `<div class="action-card-row"><span class="label">Daily</span><span class="value">${daily.length} left</span></div>`;
+                }
+                if (pendingTasks.length > 0) {
+                    actionCardHtml += `<div class="action-card-row"><span class="label">To-do</span><span class="value">${pendingTasks.length} pending</span></div>`;
+                }
+                actionCardHtml += `</div></div>`;
+            }
+        }
+        else if (parsed.action === 'general_chat') {
+            aiResponseText = parsed.message || "I'm here to help you manage your tasks!";
+        }
+        else {
+            aiResponseText = "I wasn't quite sure how to process that command.";
+        }
+
         removeTypingIndicator();
-        addAIMessage("I'm getting set up! 🚀 The AI integration is coming in Part 2. For now, here's what the chat will look like when I process your requests.");
+        addAIMessage(aiResponseText, actionCardHtml);
     }
 
     // ===== INIT =====
