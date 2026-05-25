@@ -1737,6 +1737,181 @@ document.addEventListener('DOMContentLoaded', () => {
         return String(str).replace(/[&<>'"]/g, tag => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[tag] || tag));
     }
 
+    // ===================================================================
+    //  SECTION 12: AI ASSISTANT CHAT (Part 1 — UI Scaffolding)
+    // ===================================================================
+    const chatMessagesEl = document.getElementById('chat-messages');
+    const chatInput = document.getElementById('chat-input');
+    const btnSendChat = document.getElementById('btn-send-chat');
+    const chatSuggestions = document.getElementById('chat-suggestions');
+    const chatStatusEl = document.getElementById('chat-status');
+    let chatHistory = []; // session-only chat history
+
+    // ===== Welcome Message =====
+    function renderWelcomeMessage() {
+        chatMessagesEl.innerHTML = `
+            <div class="chat-welcome">
+                <div class="chat-welcome-icon">
+                    <i class="ph ph-robot"></i>
+                </div>
+                <h3>Hey Anushka! 👋</h3>
+                <p>I'm your personal task assistant. Tell me what you need to do — I'll add tasks, set up daily routines, or schedule recurring tasks for any day of the week.</p>
+            </div>
+        `;
+    }
+    renderWelcomeMessage();
+
+    // ===== Textarea Auto-grow =====
+    chatInput.addEventListener('input', () => {
+        chatInput.style.height = 'auto';
+        chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
+        btnSendChat.disabled = !chatInput.value.trim();
+    });
+
+    // ===== Send on Enter (Shift+Enter for newline) =====
+    chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            if (chatInput.value.trim()) sendChatMessage();
+        }
+    });
+
+    btnSendChat.addEventListener('click', () => {
+        if (chatInput.value.trim()) sendChatMessage();
+    });
+
+    // ===== Suggestion Chips =====
+    document.querySelectorAll('.suggestion-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            chatInput.value = chip.dataset.suggestion;
+            chatInput.dispatchEvent(new Event('input'));
+            sendChatMessage();
+        });
+    });
+
+    // ===== Clear Chat =====
+    document.getElementById('btn-clear-chat').addEventListener('click', () => {
+        chatHistory = [];
+        renderWelcomeMessage();
+        chatSuggestions.classList.remove('hidden');
+    });
+
+    // ===== FAB Button =====
+    document.getElementById('fab-assistant')?.addEventListener('click', () => {
+        document.querySelector('.nav-tab[data-screen="assistant"]')?.click();
+    });
+
+    // ===== Chat Message Rendering =====
+    function getTimeString() {
+        return new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    }
+
+    function addUserMessage(text) {
+        // Remove welcome if it's the first message
+        const welcome = chatMessagesEl.querySelector('.chat-welcome');
+        if (welcome) welcome.remove();
+
+        const msg = document.createElement('div');
+        msg.className = 'chat-msg user';
+        msg.innerHTML = `
+            <div class="msg-avatar"><i class="ph ph-user"></i></div>
+            <div class="msg-content">
+                <div class="msg-bubble">${escapeHTML(text)}</div>
+                <span class="msg-time">${getTimeString()}</span>
+            </div>
+        `;
+        chatMessagesEl.appendChild(msg);
+        scrollChatToBottom();
+    }
+
+    function addAIMessage(text, actionCardHtml = '') {
+        // Remove typing indicator
+        removeTypingIndicator();
+
+        const msg = document.createElement('div');
+        msg.className = 'chat-msg ai';
+        msg.innerHTML = `
+            <div class="msg-avatar"><i class="ph ph-robot"></i></div>
+            <div class="msg-content">
+                <div class="msg-bubble">${text}${actionCardHtml}</div>
+                <span class="msg-time">${getTimeString()}</span>
+            </div>
+        `;
+        chatMessagesEl.appendChild(msg);
+        scrollChatToBottom();
+    }
+
+    function addTypingIndicator() {
+        removeTypingIndicator();
+        const indicator = document.createElement('div');
+        indicator.className = 'typing-indicator';
+        indicator.id = 'typing-indicator';
+        indicator.innerHTML = `
+            <div class="msg-avatar"><i class="ph ph-robot"></i></div>
+            <div class="typing-dots">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
+        `;
+        chatMessagesEl.appendChild(indicator);
+        scrollChatToBottom();
+    }
+
+    function removeTypingIndicator() {
+        document.getElementById('typing-indicator')?.remove();
+    }
+
+    function scrollChatToBottom() {
+        requestAnimationFrame(() => {
+            chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+        });
+    }
+
+    // ===== Send Message (Part 1 — placeholder, real AI integration in Part 2) =====
+    async function sendChatMessage() {
+        const text = chatInput.value.trim();
+        if (!text) return;
+
+        // Hide suggestions after first message
+        chatSuggestions.classList.add('hidden');
+
+        // Add user message
+        addUserMessage(text);
+        chatHistory.push({ role: 'user', text });
+
+        // Clear input
+        chatInput.value = '';
+        chatInput.style.height = 'auto';
+        btnSendChat.disabled = true;
+
+        // Update status
+        chatStatusEl.textContent = 'Thinking...';
+
+        // Show typing indicator
+        addTypingIndicator();
+
+        // ===== PLACEHOLDER — will be replaced in Part 2 with real Gemini API call =====
+        try {
+            await processAssistantMessage(text);
+        } catch (err) {
+            removeTypingIndicator();
+            addAIMessage("Sorry, I encountered an error. Please make sure your Gemini API key is set in Settings.");
+            console.error('Assistant error:', err);
+        }
+
+        // Reset status
+        chatStatusEl.textContent = 'Online — ready to help';
+    }
+
+    // ===== Placeholder processAssistantMessage (Part 2 will replace this) =====
+    async function processAssistantMessage(userText) {
+        // Simulate delay for now
+        await new Promise(r => setTimeout(r, 1200));
+        removeTypingIndicator();
+        addAIMessage("I'm getting set up! 🚀 The AI integration is coming in Part 2. For now, here's what the chat will look like when I process your requests.");
+    }
+
     // ===== INIT =====
     renderTasks();
     initMiniCal();

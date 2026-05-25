@@ -40,6 +40,10 @@
                     <i class="ph ph-fire"></i>
                     <span>Habits</span>
                 </button>
+                <button class="nav-tab" data-screen="assistant" id="nav-assistant">
+                    <i class="ph ph-robot"></i>
+                    <span>AI Assistant</span>
+                </button>
             </div>
             <div class="sidebar-footer">
                 <button id="btn-settings" class="nav-tab" title="Settings">
@@ -191,6 +195,12 @@
                                 </div>
                             </section>
                         </div>
+
+                        <!-- Floating AI Assistant Button -->
+                        <button id="fab-assistant" class="fab-assistant" title="Ask AI Assistant">
+                            <i class="ph ph-robot"></i>
+                            <span class="fab-pulse"></span>
+                        </button>
 
                         <!-- RIGHT: Calendar Panel -->
                         <div class="calendar-panel">
@@ -347,6 +357,62 @@
                                 <p>No habits yet. Start building one!</p>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== AI ASSISTANT SCREEN ==================== -->
+            <div class="screen" id="screen-assistant">
+                <div class="assistant-screen">
+                    <!-- Chat Header -->
+                    <div class="chat-header">
+                        <div class="chat-header-left">
+                            <div class="chat-avatar">
+                                <i class="ph ph-robot"></i>
+                                <span class="chat-avatar-pulse"></span>
+                            </div>
+                            <div>
+                                <h2>AI Assistant</h2>
+                                <span class="chat-status" id="chat-status">Online — ready to help</span>
+                            </div>
+                        </div>
+                        <div class="chat-header-actions">
+                            <button id="btn-clear-chat" class="icon-btn" title="Clear chat">
+                                <i class="ph ph-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Chat Messages Area -->
+                    <div class="chat-messages" id="chat-messages">
+                        <!-- Welcome message (rendered by JS) -->
+                    </div>
+
+                    <!-- Suggestion Chips -->
+                    <div class="chat-suggestions" id="chat-suggestions">
+                        <button class="suggestion-chip" data-suggestion="What tasks do I have today?">
+                            <i class="ph ph-list-checks"></i> Today's tasks
+                        </button>
+                        <button class="suggestion-chip" data-suggestion="Add a task to buy groceries tomorrow">
+                            <i class="ph ph-plus"></i> Add a task
+                        </button>
+                        <button class="suggestion-chip" data-suggestion="Schedule a daily exercise routine every morning">
+                            <i class="ph ph-arrows-clockwise"></i> Set recurring
+                        </button>
+                        <button class="suggestion-chip" data-suggestion="Schedule gym on Monday, Wednesday, and Friday evenings">
+                            <i class="ph ph-calendar"></i> Weekly schedule
+                        </button>
+                    </div>
+
+                    <!-- Chat Input Bar -->
+                    <div class="chat-input-bar">
+                        <div class="chat-input-wrapper">
+                            <textarea id="chat-input" placeholder="Tell me what you need to do..." rows="1" autocomplete="off"></textarea>
+                            <button id="btn-send-chat" class="chat-send-btn" title="Send message" disabled>
+                                <i class="ph ph-paper-plane-right"></i>
+                            </button>
+                        </div>
+                        <p class="chat-hint">Try: "Remind me to study every weekday at 6pm" or "Add a task to finish the report by Friday"</p>
                     </div>
                 </div>
             </div>
