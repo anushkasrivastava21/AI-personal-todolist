@@ -1,3 +1,5 @@
-# Ignore the real environment variables file
+# Ignore environment variables
 .env
-.env
+
+# Dependencies
+node_modules/

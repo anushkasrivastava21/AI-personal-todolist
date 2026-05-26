@@ -1,0 +1,73 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String      @id @default(uuid())
+  email        String      @unique
+  passwordHash String      @map("password_hash")
+  username     String
+  xpPoints     Int         @default(0) @map("xp_points")
+  level        Int         @default(1)
+  activeTheme  String      @default("default") @map("active_theme")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  workspaces   Workspace[]
+  tasks        Task[]
+
+  @@map("users")
+}
+
+model Workspace {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  color     String
+  icon      String
+  createdAt DateTime @default(now()) @map("created_at")
+  tasks     Task[]
+
+  @@map("workspaces")
+}
+
+model Task {
+  id                  String     @id @default(uuid())
+  userId              String     @map("user_id")
+  user                User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId         String     @map("workspace_id")
+  workspace           Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  parentTaskId        String?    @map("parent_task_id")
+  parentTask          Task?      @relation("TaskToSubtasks", fields: [parentTaskId], references: [id], onDelete: Cascade)
+  subtasks            Task[]     @relation("TaskToSubtasks")
+  title               String
+  description         String?
+  priority            Priority   @default(MEDIUM)
+  status              Status     @default(TODO)
+  scheduledDate       DateTime?  @map("scheduled_date")
+  deadline            DateTime?
+  eisenhowerQuadrant  Int?       @map("eisenhower_quadrant")
+  estimatedPomodoros  Int        @default(1) @map("estimated_pomodoros")
+  completedPomodoros  Int        @default(0) @map("completed_pomodoros")
+  isAiGenerated       Boolean    @default(false) @map("is_ai_generated")
+  createdAt           DateTime   @default(now()) @map("created_at")
+
+  @@map("tasks")
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum Status {
+  TODO
+  IN_PROGRESS
+  DONE
+}

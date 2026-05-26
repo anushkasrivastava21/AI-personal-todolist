@@ -1,0 +1,15 @@
+{
+  "name": "ai-todo-monorepo",
+  "private": true,
+  "workspaces": [
+    "server"
+  ],
+  "scripts": {
+    "dev:server": "npm run dev --workspace=server",
+    "start:server": "npm start --workspace=server",
+    "db:migrate": "npm run db:migrate --workspace=server"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

@@ -1,0 +1,215 @@
+# Productivity & Habit Tracker — Architecture Brief
+
+**One quick note:** "Google Antigravity IDE" doesn't appear to be a real product — you may be thinking of Google IDX, Project IDX, or another cloud IDE. This architecture is IDE-agnostic, so it'll work anywhere (VS Code, IDX, Cursor, etc.). Just flag what you're actually using if it affects tooling.
+
+---
+
+## Proposed Tech Stack
+
+| Layer | Choice | Rationale |
+|---|---|---|
+| Frontend | React 18 + Vite | Fast HMR, component isolation |
+| Styling | Standard CSS + CSS Variables | Theme switching for gamification |
+| Backend | Node.js + Express | Lightweight REST API |
+| Database | PostgreSQL | Relational integrity for tasks/habits/streaks |
+| ORM | Prisma | Type-safe schema, easy migrations |
+| Auth | JWT + bcrypt | Stateless, simple to implement |
+| AI Integration | Anthropic Claude API | Task breakdown feature |
+| Notifications | node-cron + Web Push API | Scheduled reminders |
+| Real-time | Socket.io | Live Pomodoro timer sync, notifications |
+
+---
+
+## Database Schema (High-Level)
+
+**Users**
+```
+users { id, email, password_hash, username, xp_points, level, active_theme, created_at }
+```
+
+**Workspaces** (contextual folders)
+```
+workspaces { id, user_id, name, color, icon, created_at }
+```
+
+**Tasks**
+```
+tasks {
+  id, user_id, workspace_id, parent_task_id (self-ref for subtasks),
+  title, description, priority (HIGH/MEDIUM/LOW/URGENT),
+  status (TODO/IN_PROGRESS/DONE),
+  scheduled_date, deadline, eisenhower_quadrant,
+  estimated_pomodoros, completed_pomodoros,
+  is_ai_generated, created_at
+}
+```
+
+**Habits**
+```
+habits {
+  id, user_id, workspace_id, title, description,
+  recurrence_type (DAILY/WEEKLY/CUSTOM), recurrence_days (int[]),
+  current_streak, longest_streak, last_completed_date,
+  xp_reward, created_at
+}
+```
+
+**Habit Logs** (one row per completion)
+```
+habit_logs { id, habit_id, user_id, completed_at }
+```
+
+**Pomodoro Sessions**
+```
+pomodoro_sessions {
+  id, user_id, task_id, started_at, ended_at,
+  duration_minutes, session_type (WORK/BREAK), completed
+}
+```
+
+**Achievements & Badges**
+```
+achievements { id, name, description, condition_type, condition_value, icon, xp_reward }
+user_achievements { id, user_id, achievement_id, unlocked_at }
+```
+
+**Notifications**
+```
+notifications { id, user_id, type, title, body, scheduled_for, sent, read, created_at }
+```
+
+---
+
+## Frontend Component Architecture
+
+```
+src/
+├── components/
+│   ├── layout/
+│   │   ├── Sidebar.jsx          # Workspace nav, user XP bar
+│   │   ├── Header.jsx           # Global search, notifications bell
+│   │   └── AppShell.jsx         # Theme wrapper
+│   ├── tasks/
+│   │   ├── TaskBoard.jsx        # Kanban/list toggle
+│   │   ├── TaskCard.jsx         # Priority badge, deadline countdown
+│   │   ├── TaskForm.jsx         # Create/edit with AI breakdown trigger
+│   │   ├── EisenhowerMatrix.jsx # 2x2 quadrant drag-drop view
+│   │   └── SubtaskList.jsx      # Nested task tree
+│   ├── habits/
+│   │   ├── HabitDashboard.jsx
+│   │   ├── HabitCard.jsx        # Streak flame icon + counter
+│   │   └── HabitCheckIn.jsx     # Daily check-in modal
+│   ├── calendar/
+│   │   ├── CalendarView.jsx     # Month/week/day views
+│   │   └── AgendaView.jsx       # Day-specific task list
+│   ├── pomodoro/
+│   │   ├── PomodoroTimer.jsx    # Circular countdown, task binding
+│   │   └── SessionLog.jsx
+│   ├── analytics/
+│   │   ├── AnalyticsDashboard.jsx
+│   │   ├── CompletionChart.jsx  # Weekly/monthly line chart
+│   │   ├── StreakHeatmap.jsx    # GitHub-style habit heatmap
+│   │   └── PomodoroStats.jsx
+│   ├── gamification/
+│   │   ├── AchievementModal.jsx # Unlock animation
+│   │   ├── BadgeGrid.jsx
+│   │   ├── XPBar.jsx
+│   │   └── ThemeUnlockGallery.jsx
+│   └── notifications/
+│       ├── NotificationBell.jsx
+│       └── NotificationPanel.jsx
+├── pages/
+│   ├── Dashboard.jsx
+│   ├── TodayView.jsx
+│   ├── CalendarPage.jsx
+│   ├── HabitsPage.jsx
+│   ├── AnalyticsPage.jsx
+│   ├── SettingsPage.jsx
+│   └── AuthPage.jsx
+├── context/
+│   ├── AuthContext.jsx
+│   ├── ThemeContext.jsx         # CSS variable injection for themes
+│   └── TimerContext.jsx         # Global Pomodoro state
+├── hooks/
+│   ├── usePomodoro.js
+│   ├── useStreakChecker.js
+│   ├── useNotifications.js
+│   └── useAIBreakdown.js
+├── services/
+│   ├── api.js                   # Axios instance + interceptors
+│   ├── aiService.js             # Claude API calls
+│   └── pushService.js           # Web Push registration
+└── styles/
+    ├── themes/
+    │   ├── default.css
+    │   ├── dark.css
+    │   └── retro.css            # Unlockable theme example
+    ├── global.css
+    └── animations.css
+```
+
+**Backend structure:**
+```
+server/
+├── routes/        # tasks, habits, auth, pomodoro, analytics, ai, notifications
+├── controllers/   # business logic per domain
+├── middleware/    # auth guard, error handler, rate limiter
+├── services/
+│   ├── streakService.js    # Streak calculation + reset logic
+│   ├── xpService.js        # XP award + level-up logic
+│   ├── achievementService.js
+│   ├── aiService.js        # Claude API integration
+│   └── notificationService.js  # cron + web push
+├── prisma/
+│   └── schema.prisma
+└── index.js
+```
+
+---
+
+## Build Sequence (Proposed)
+
+**Phase 1 — Foundation (Steps 1–3)**
+1. Scaffold Vite + React frontend and Express backend as a monorepo; configure Prisma with PostgreSQL and run initial migration for Users + Workspaces
+2. Build auth flow (register/login/JWT middleware) + AuthContext on frontend; basic protected routing
+3. Sidebar + AppShell layout; ThemeContext with CSS variable switching wired up
+
+**Phase 2 — Core Task Engine (Steps 4–6)**
+4. Full CRUD for Tasks API + TaskBoard, TaskCard, TaskForm components; priority and status system
+5. Calendar and AgendaView components; date scheduling + deadline countdown logic
+6. EisenhowerMatrix drag-and-drop view; subtask nesting (parent_task_id self-reference)
+
+**Phase 3 — Habits + Streaks (Steps 7–8)**
+7. Habits API with recurrence logic; streak calculation service (checks last_completed_date daily via cron); HabitDashboard + HabitCard with flame streak counter
+8. Habit check-in flow; streak heatmap component; streak freeze/recovery edge cases
+
+**Phase 4 — Pomodoro + Notifications (Steps 9–10)**
+9. PomodoroTimer with Socket.io for live sync; session logging tied to tasks; TimerContext globally
+10. Notification scheduler (node-cron); Web Push API integration; in-app NotificationPanel
+
+**Phase 5 — Gamification (Steps 11–12)**
+11. XP + leveling system; achievement definitions seeded to DB; unlock trigger hooks in streakService and task completion handlers; AchievementModal with CSS animation
+12. Unlockable themes in ThemeUnlockGallery; badge display grid; XPBar in sidebar
+
+**Phase 6 — AI + Analytics (Steps 13–14)**
+13. Claude API integration for task breakdown (`/api/ai/breakdown`); useAIBreakdown hook; UI trigger inside TaskForm
+14. Analytics dashboard with completion charts, Pomodoro hour aggregates, and streak history (recharts or Chart.js)
+
+**Phase 7 — Polish (Step 15)**
+15. Responsive mobile CSS pass; loading skeletons; error boundaries; performance audit
+
+---
+
+## Key Design Decisions Worth Calling Out
+
+**Streak integrity:** The streak checker runs as a nightly cron job at midnight. It scans all habits and compares `last_completed_date` to yesterday. If the user missed it, `current_streak` resets to 0 and an XP penalty notification fires. This is the same model Duolingo uses.
+
+**Gamification theming:** Themes are stored as CSS files that override a set of root CSS variables (e.g., `--accent-color`, `--bg-primary`, `--card-bg`). The ThemeContext injects the correct class on `<body>` based on the user's `active_theme` field. Locked themes render as blurred previews.
+
+**AI breakdown:** The endpoint sends the user's project description to Claude with a structured prompt requesting a JSON array of subtasks with suggested durations and scheduling offsets. The response populates `parent_task_id` sub-tasks automatically.
+
+**Pomodoro-task binding:** Sessions are always linked to a `task_id`. The timer page shows the task title and updates `completed_pomodoros` on the task record when a work session ends cleanly.
+
+---
+
+**Ready to proceed?** Confirm the plan and I'll generate Phase 1 code — monorepo scaffold, Prisma schema, auth backend, and AppShell frontend in one structured output.

@@ -2051,8 +2051,13 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             await processAssistantMessage(text);
         } catch (err) {
+            chatHistory.pop(); // Remove the user message that caused the failure to prevent role mismatch on retry
             removeTypingIndicator();
-            addAIMessage("Sorry, I encountered an error. Please make sure your Gemini API key is set in Settings.");
+            if (err.message === 'No API key') {
+                addAIMessage("Sorry, please set your Gemini API key in Settings first.");
+            } else {
+                addAIMessage("Error: " + err.message);
+            }
             console.error('Assistant error:', err);
         }
 
@@ -2083,16 +2088,10 @@ Example output for "remind me to go to the gym every monday and wednesday mornin
 
         const requestBody = {
             system_instruction: { parts: [{ text: systemPrompt }] },
-            contents: [
-                ...chatHistory.slice(0, -1).map(msg => ({
-                    role: msg.role === 'ai' ? 'model' : 'user',
-                    parts: [{ text: msg.text }]
-                })),
-                {
-                    role: "user",
-                    parts: [{ text: userText }]
-                }
-            ],
+            contents: chatHistory.map(msg => ({
+                role: msg.role === 'ai' ? 'model' : 'user',
+                parts: [{ text: msg.text }]
+            })),
             generationConfig: {
                 temperature: 0.1,
                 responseMimeType: "application/json"
@@ -2105,10 +2104,27 @@ Example output for "remind me to go to the gym every monday and wednesday mornin
             body: JSON.stringify(requestBody)
         });
 
-        if (!res.ok) throw new Error('API Error: ' + res.status);
+        if (!res.ok) {
+            let errorText = 'API Error: ' + res.status;
+            try {
+                const errData = await res.json();
+                if (errData.error && errData.error.message) errorText += " - " + errData.error.message;
+            } catch (e) {}
+            throw new Error(errorText);
+        }
         const data = await res.json();
         const raw = data.candidates[0].content.parts[0].text;
-        const parsed = JSON.parse(raw.trim());
+        
+        let cleanRaw = raw;
+        const firstBrace = raw.indexOf('{');
+        const lastBrace = raw.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace !== -1) {
+            cleanRaw = raw.substring(firstBrace, lastBrace + 1);
+        } else {
+            cleanRaw = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
+        }
+        
+        const parsed = JSON.parse(cleanRaw);
         
         chatHistory.push({ role: 'ai', text: raw });
 
