@@ -1018,6 +1018,30 @@ body {
 .modal-body input:focus { border-color: var(--accent-color); }
 
 .help-text { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 1.5rem; }
+.help-text a { color: var(--accent-color); text-decoration: underline; }
+.help-text code { background: var(--bg-secondary); padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.85em; }
+
+.settings-section { margin-bottom: 1rem; }
+.settings-section-title {
+    font-size: 0.95rem; font-weight: 600; margin-bottom: 0.75rem;
+    display: flex; align-items: center; gap: 0.5rem; color: var(--text-primary);
+}
+.settings-section .form-field { margin-bottom: 0.75rem; }
+.settings-section .form-field label { display: block; font-size: 0.8rem; font-weight: 500; margin-bottom: 0.3rem; color: var(--text-secondary); }
+
+.btn-secondary {
+    background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color);
+    padding: 0.6rem 1rem; border-radius: 10px; font-size: 0.85rem; cursor: pointer;
+    font-family: 'Inter', sans-serif; font-weight: 500; transition: all 0.2s;
+}
+.btn-secondary:hover { background: var(--bg-tertiary, var(--bg-secondary)); border-color: var(--accent-color); }
+
+.ollama-status { margin-bottom: 0.75rem; font-size: 0.82rem; min-height: 1.2em; }
+.ollama-status .status-success { color: #22c55e; }
+.ollama-status .status-error { color: #ef4444; }
+.ollama-status .status-warning { color: #f59e0b; }
+.ollama-status .status-pending { color: var(--text-secondary); }
+.ollama-status code { background: var(--bg-secondary); padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.85em; }
 
 .full-width { width: 100%; border-radius: 12px; padding: 0.75rem; font-size: 0.95rem; font-family: 'Inter', sans-serif; font-weight: 600; }
 

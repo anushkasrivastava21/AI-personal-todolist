@@ -465,9 +465,20 @@
                 <button id="btn-close-settings" class="icon-btn"><i class="ph ph-x"></i></button>
             </div>
             <div class="modal-body">
-                <label for="api-key-input">Gemini API Key</label>
-                <input type="password" id="api-key-input" placeholder="Enter your Gemini API Key..." autocomplete="off">
-                <p class="help-text">Your key is stored securely in your browser's LocalStorage and never pushed to GitHub.</p>
+                <div class="settings-section">
+                    <h3 class="settings-section-title"><i class="ph ph-robot"></i> AI Provider — Ollama (Local)</h3>
+                    <div class="form-field">
+                        <label for="ollama-url-input">Ollama Server URL</label>
+                        <input type="text" id="ollama-url-input" placeholder="http://localhost:11434" autocomplete="off" value="http://localhost:11434">
+                    </div>
+                    <div class="form-field">
+                        <label for="ollama-model-input">Model Name</label>
+                        <input type="text" id="ollama-model-input" placeholder="llama3.2" autocomplete="off" value="llama3.2">
+                    </div>
+                    <p class="help-text">Ollama runs AI models locally on your machine — free and private. <a href="https://ollama.com" target="_blank" rel="noopener">Install Ollama</a>, then run <code>ollama pull llama3.2</code> to get started.</p>
+                    <div id="ollama-status" class="ollama-status"></div>
+                    <button id="btn-test-ollama" class="btn-secondary full-width" style="margin-bottom: 0.75rem;">Test Connection</button>
+                </div>
                 <button id="btn-save-settings" class="btn-primary full-width">Save Settings</button>
             </div>
         </div>

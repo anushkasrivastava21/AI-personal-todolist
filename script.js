@@ -9,7 +9,55 @@ document.addEventListener('DOMContentLoaded', () => {
     const progressBarFill = document.getElementById('progress-bar-fill');
 
     let currentFilter = 'all';
-    let geminiApiKey = localStorage.getItem('gemini_api_key') || '';
+    let ollamaUrl = localStorage.getItem('ollama_url') || 'http://localhost:11434';
+    let ollamaModel = localStorage.getItem('ollama_model') || 'llama3.2';
+
+    // ===== Ollama API Helper =====
+    async function callOllama(prompt, { systemPrompt = '', jsonMode = false, messages = null } = {}) {
+        const url = ollamaUrl.replace(/\/$/, '');
+        if (messages) {
+            // Chat mode (multi-turn)
+            const body = {
+                model: ollamaModel,
+                messages: messages,
+                stream: false
+            };
+            if (jsonMode) body.format = 'json';
+            const res = await fetch(`${url}/api/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            if (!res.ok) {
+                let errMsg = `Ollama error: ${res.status}`;
+                try { const e = await res.json(); errMsg += ' - ' + (e.error || ''); } catch(_) {}
+                throw new Error(errMsg);
+            }
+            const data = await res.json();
+            return data.message.content;
+        } else {
+            // Generate mode (single prompt)
+            const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${prompt}` : prompt;
+            const body = {
+                model: ollamaModel,
+                prompt: fullPrompt,
+                stream: false
+            };
+            if (jsonMode) body.format = 'json';
+            const res = await fetch(`${url}/api/generate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            if (!res.ok) {
+                let errMsg = `Ollama error: ${res.status}`;
+                try { const e = await res.json(); errMsg += ' - ' + (e.error || ''); } catch(_) {}
+                throw new Error(errMsg);
+            }
+            const data = await res.json();
+            return data.response;
+        }
+    }
 
     // ===================================================================
     //  SECTION 1: NAVIGATION
@@ -757,32 +805,24 @@ document.addEventListener('DOMContentLoaded', () => {
     btnAi.addEventListener('click', async () => {
         const text = taskInput.value.trim();
         if (!text) return;
-        if (!geminiApiKey) {
-            alert("Please add your Gemini API Key in Settings first!");
-            document.getElementById('settings-modal').classList.remove('hidden');
-            return;
-        }
         inputWrapper.classList.add('ai-thinking');
         taskInput.disabled = true; btnAi.disabled = true;
         try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: `Break down the following task into 3 to 5 very short, actionable subtasks. Return ONLY a valid JSON array of strings. No markdown, no backticks, no other text. Task: "${text}"` }] }] })
-            });
-            if (!res.ok) throw new Error('API Error');
-            const data = await res.json();
-            const raw = data.candidates[0].content.parts[0].text;
-            const subtasks = JSON.parse(raw.replace(/```json/g, '').replace(/```/g, '').trim());
+            const raw = await callOllama(
+                `Break down the following task into 3 to 5 very short, actionable subtasks. Return ONLY a valid JSON object with a key "subtasks" containing an array of strings. Task: "${text}"`,
+                { jsonMode: true }
+            );
+            const parsed = JSON.parse(raw.replace(/```json/g, '').replace(/```/g, '').trim());
+            const subtasks = parsed.subtasks || parsed;
             const deadline = document.getElementById('task-date').value || '';
             const parent = addTask(text + ' (AI Planned)', deadline, null, {
                 points: parseInt(document.getElementById('task-points').value) || 10,
                 workload: parseInt(document.getElementById('task-workload').value) || 5,
             });
-            subtasks.forEach(sub => addTask(sub, '', parent.id));
+            (Array.isArray(subtasks) ? subtasks : []).forEach(sub => addTask(sub, '', parent.id));
         } catch (err) {
             console.error(err);
-            alert("Failed to generate subtasks. Please check your API key.");
+            alert("Failed to generate subtasks. Make sure Ollama is running (ollama serve).");
         }
         saveTasks();
         renderTasks();
@@ -1227,11 +1267,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-generate-plan').addEventListener('click', async () => {
         const desc = document.getElementById('habit-plan-desc').value.trim();
         if (!desc) return alert('Please describe your goal first.');
-        if (!geminiApiKey) {
-            alert("Please add your Gemini API Key in Settings first!");
-            document.getElementById('settings-modal').classList.remove('hidden');
-            return;
-        }
 
         const btn = document.getElementById('btn-generate-plan');
         btn.classList.add('loading');
@@ -1240,23 +1275,17 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const habitName = document.getElementById('habit-name').value.trim();
             const unit = document.getElementById('habit-unit').value.trim() || 'units';
-            const prompt = `You are a habit coach. The user wants to build a habit: "${habitName}". Here is their description: "${desc}". Create a progressive scaling plan in 4-8 steps. Each step has a week range (e.g., week 1-2) and a target value. Return ONLY a valid JSON array of objects with keys: weekStart (number), weekEnd (number), target (number). No markdown, no backticks, no other text. Example: [{"weekStart":1,"weekEnd":2,"target":5}]`;
+            const prompt = `You are a habit coach. The user wants to build a habit: "${habitName}". Here is their description: "${desc}". Create a progressive scaling plan in 4-8 steps. Each step has a week range (e.g., week 1-2) and a target value. Return ONLY a valid JSON object with a key "plan" containing an array of objects with keys: weekStart (number), weekEnd (number), target (number). Example: {"plan":[{"weekStart":1,"weekEnd":2,"target":5}]}`;
 
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-            });
-            if (!res.ok) throw new Error('API Error');
-            const data = await res.json();
-            const raw = data.candidates[0].content.parts[0].text;
-            const plan = JSON.parse(raw.replace(/```json/g, '').replace(/```/g, '').trim());
+            const raw = await callOllama(prompt, { jsonMode: true });
+            const parsed = JSON.parse(raw.replace(/```json/g, '').replace(/```/g, '').trim());
+            const plan = parsed.plan || parsed;
 
-            renderPlanTable(plan);
+            renderPlanTable(Array.isArray(plan) ? plan : []);
             document.getElementById('ai-plan-result').classList.remove('hidden');
         } catch (err) {
             console.error(err);
-            alert("Failed to generate plan. Check your API key.");
+            alert("Failed to generate plan. Make sure Ollama is running (ollama serve).");
         }
 
         btn.classList.remove('loading');
@@ -1624,15 +1653,43 @@ document.addEventListener('DOMContentLoaded', () => {
     //  SECTION 9: SETTINGS MODAL
     // ===================================================================
     const settingsModal = document.getElementById('settings-modal');
-    const apiKeyInput = document.getElementById('api-key-input');
+    const ollamaUrlInput = document.getElementById('ollama-url-input');
+    const ollamaModelInput = document.getElementById('ollama-model-input');
+    const ollamaStatusEl = document.getElementById('ollama-status');
+
     document.getElementById('btn-settings')?.addEventListener('click', () => {
-        apiKeyInput.value = geminiApiKey;
+        ollamaUrlInput.value = ollamaUrl;
+        ollamaModelInput.value = ollamaModel;
+        ollamaStatusEl.innerHTML = '';
         settingsModal.classList.remove('hidden');
     });
     document.getElementById('btn-close-settings')?.addEventListener('click', () => settingsModal.classList.add('hidden'));
+
+    // Test Ollama connection
+    document.getElementById('btn-test-ollama')?.addEventListener('click', async () => {
+        const testUrl = ollamaUrlInput.value.trim().replace(/\/$/, '');
+        ollamaStatusEl.innerHTML = '<span class="status-pending"><i class="ph ph-spinner"></i> Testing connection...</span>';
+        try {
+            const res = await fetch(`${testUrl}/api/tags`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            const models = (data.models || []).map(m => m.name);
+            if (models.length === 0) {
+                ollamaStatusEl.innerHTML = '<span class="status-warning"><i class="ph ph-warning"></i> Connected, but no models found. Run <code>ollama pull llama3.2</code></span>';
+            } else {
+                ollamaStatusEl.innerHTML = `<span class="status-success"><i class="ph ph-check-circle"></i> Connected! Available models: ${models.join(', ')}</span>`;
+            }
+        } catch (err) {
+            ollamaStatusEl.innerHTML = `<span class="status-error"><i class="ph ph-x-circle"></i> Cannot connect. Is Ollama running? (<code>ollama serve</code>)</span>`;
+        }
+    });
+
+    // Save settings
     document.getElementById('btn-save-settings')?.addEventListener('click', () => {
-        geminiApiKey = apiKeyInput.value.trim();
-        localStorage.setItem('gemini_api_key', geminiApiKey);
+        ollamaUrl = ollamaUrlInput.value.trim() || 'http://localhost:11434';
+        ollamaModel = ollamaModelInput.value.trim() || 'llama3.2';
+        localStorage.setItem('ollama_url', ollamaUrl);
+        localStorage.setItem('ollama_model', ollamaModel);
         settingsModal.classList.add('hidden');
     });
 
@@ -2047,17 +2104,13 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show typing indicator
         addTypingIndicator();
 
-        // ===== PLACEHOLDER — will be replaced in Part 2 with real Gemini API call =====
+        // ===== Ollama AI Chat =====
         try {
             await processAssistantMessage(text);
         } catch (err) {
             chatHistory.pop(); // Remove the user message that caused the failure to prevent role mismatch on retry
             removeTypingIndicator();
-            if (err.message === 'No API key') {
-                addAIMessage("Sorry, please set your Gemini API key in Settings first.");
-            } else {
-                addAIMessage("Error: " + err.message);
-            }
+            addAIMessage("Error: " + err.message + ". Make sure Ollama is running (ollama serve).");
             console.error('Assistant error:', err);
         }
 
@@ -2065,12 +2118,8 @@ document.addEventListener('DOMContentLoaded', () => {
         chatStatusEl.textContent = 'Online — ready to help';
     }
 
-    // ===== Real Gemini API Integration =====
+    // ===== Ollama AI Chat Integration =====
     async function processAssistantMessage(userText) {
-        if (!geminiApiKey) {
-            throw new Error('No API key');
-        }
-
         const systemPrompt = `You are an AI personal task assistant for a productivity app.
 The user will tell you what they want to do. Your job is to extract the intent and return a raw JSON object.
 No markdown, no backticks, no conversational text. JUST valid JSON.
@@ -2086,34 +2135,15 @@ Use the current date: ${new Date().toISOString().split('T')[0]} as context for w
 Example output for "remind me to go to the gym every monday and wednesday morning":
 {"action": "add_recurring", "name": "Go to the gym", "recurrenceDays": [1, 3], "timeOfDay": "morning"}`;
 
-        const requestBody = {
-            system_instruction: { parts: [{ text: systemPrompt }] },
-            contents: chatHistory.map(msg => ({
-                role: msg.role === 'ai' ? 'model' : 'user',
-                parts: [{ text: msg.text }]
-            })),
-            generationConfig: {
-                temperature: 0.1,
-                responseMimeType: "application/json"
-            }
-        };
+        const messages = [
+            { role: 'system', content: systemPrompt },
+            ...chatHistory.map(msg => ({
+                role: msg.role === 'ai' ? 'assistant' : 'user',
+                content: msg.text
+            }))
+        ];
 
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody)
-        });
-
-        if (!res.ok) {
-            let errorText = 'API Error: ' + res.status;
-            try {
-                const errData = await res.json();
-                if (errData.error && errData.error.message) errorText += " - " + errData.error.message;
-            } catch (e) {}
-            throw new Error(errorText);
-        }
-        const data = await res.json();
-        const raw = data.candidates[0].content.parts[0].text;
+        const raw = await callOllama('', { messages, jsonMode: true });
         
         let cleanRaw = raw;
         const firstBrace = raw.indexOf('{');
